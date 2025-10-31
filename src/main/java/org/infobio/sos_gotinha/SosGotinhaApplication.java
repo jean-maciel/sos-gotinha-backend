@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class SosGotinhaApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SosGotinhaApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SosGotinhaApplication.class, args);
+    }
 
 }
