@@ -1,5 +1,6 @@
 package org.infobio.sos_gotinha.controller;
 
+import org.infobio.sos_gotinha.dto.RegistroVacinaRequestDTO;
 import org.infobio.sos_gotinha.dto.RegistroVacinaResponseDTO;
 import org.infobio.sos_gotinha.model.RegistroVacina;
 import org.infobio.sos_gotinha.service.RegistroVacinaService;
@@ -34,20 +35,28 @@ public class RegistroVacinaController {
     }
 
     @PostMapping
-    public ResponseEntity<RegistroVacina> createRegistro(@RequestBody RegistroVacina registro) {
-        RegistroVacina novoRegistro = registroVacinaService.save(registro);
-        return new ResponseEntity<>(novoRegistro, HttpStatus.CREATED);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRegistro(@PathVariable UUID id) {
-        registroVacinaService.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<RegistroVacinaResponseDTO> createRegistro(@RequestBody RegistroVacinaRequestDTO registroDTO) { // Mude o tipo de retorno
+        RegistroVacinaResponseDTO novoRegistroDTO = registroVacinaService.salvarRegistro(registroDTO);
+        return new ResponseEntity<>(novoRegistroDTO, HttpStatus.CREATED);
     }
 
     @GetMapping("/por-crianca/{criancaId}")
     public ResponseEntity<List<RegistroVacinaResponseDTO>> getRegistrosPorCrianca(@PathVariable UUID criancaId) {
         List<RegistroVacinaResponseDTO> registros = registroVacinaService.findByCriancaId(criancaId);
         return ResponseEntity.ok(registros);
+    }
+
+    @PutMapping("/{registroId}")
+    public ResponseEntity<RegistroVacinaResponseDTO> updateRegistro(
+            @PathVariable UUID registroId,
+            @RequestBody RegistroVacinaRequestDTO registroDTO) {
+        RegistroVacinaResponseDTO registroAtualizado = registroVacinaService.editarRegistro(registroId, registroDTO);
+        return ResponseEntity.ok(registroAtualizado);
+    }
+
+    @DeleteMapping("/{registroId}")
+    public ResponseEntity<Void> deleteRegistro(@PathVariable UUID registroId) {
+        registroVacinaService.deleteRegistro(registroId);
+        return ResponseEntity.noContent().build(); // HTTP 204
     }
 }
