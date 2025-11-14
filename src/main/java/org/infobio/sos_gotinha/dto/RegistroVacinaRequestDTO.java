@@ -7,9 +7,8 @@ import java.util.UUID;
 @Data
 public class RegistroVacinaRequestDTO {
     private UUID criancaId;
-    private UUID profissionalUserId; // ID do AppUser do profissional logado
-    private String nomeVacina;
-    private Integer dose;
+    private UUID profissionalUserId;
+    private UUID calendarioVacinaId;
     private LocalDate dataAplicacao;
     private String localAplicacao;
     private String loteVacina;

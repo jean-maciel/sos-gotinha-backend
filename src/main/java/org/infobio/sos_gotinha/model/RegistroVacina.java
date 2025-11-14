@@ -27,11 +27,9 @@ public class RegistroVacina {
     @JoinColumn(name = "profissional_id") // ON DELETE SET NULL
     private ProfissionalSaude profissional;
 
-    @Column(name = "nome_vacina", nullable = false)
-    private String nomeVacina;
-
-    @Column(nullable = false)
-    private Integer dose;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "calendario_vacina_id", nullable = false)
+    private CalendarioVacina calendarioVacina;
 
     @Column(name = "data_aplicacao", nullable = false)
     private LocalDate dataAplicacao;

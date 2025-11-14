@@ -3,9 +3,11 @@ package org.infobio.sos_gotinha.service;
 import jakarta.transaction.Transactional;
 import org.infobio.sos_gotinha.dto.RegistroVacinaRequestDTO;
 import org.infobio.sos_gotinha.dto.RegistroVacinaResponseDTO;
+import org.infobio.sos_gotinha.model.CalendarioVacina;
 import org.infobio.sos_gotinha.model.Crianca;
 import org.infobio.sos_gotinha.model.ProfissionalSaude;
 import org.infobio.sos_gotinha.model.RegistroVacina;
+import org.infobio.sos_gotinha.repository.CalendarioVacinaRepository;
 import org.infobio.sos_gotinha.repository.CriancaRepository;
 import org.infobio.sos_gotinha.repository.ProfissionalSaudeRepository;
 import org.infobio.sos_gotinha.repository.RegistroVacinaRepository;
@@ -22,37 +24,40 @@ public class RegistroVacinaService {
     private final RegistroVacinaRepository registroVacinaRepository;
     private final ProfissionalSaudeRepository profissionalSaudeRepository;
     private final CriancaRepository criancaRepository;
+    private final CalendarioVacinaRepository calendarioVacinaRepository;
 
     @Autowired
     public RegistroVacinaService(RegistroVacinaRepository registroVacinaRepository,
                                  ProfissionalSaudeRepository profissionalSaudeRepository,
-                                 CriancaRepository criancaRepository) {
+                                 CriancaRepository criancaRepository,
+                                 CalendarioVacinaRepository calendarioVacinaRepository) { // 2. Adicionar ao construtor
         this.registroVacinaRepository = registroVacinaRepository;
         this.profissionalSaudeRepository = profissionalSaudeRepository;
         this.criancaRepository = criancaRepository;
+        this.calendarioVacinaRepository = calendarioVacinaRepository;
     }
 
     @Transactional
-    public RegistroVacinaResponseDTO salvarRegistro(RegistroVacinaRequestDTO dto) { // 1. Mude o tipo de retorno
-        // ... (lógica para encontrar profissional e crianca) ...
+    public RegistroVacinaResponseDTO salvarRegistro(RegistroVacinaRequestDTO dto) {
         ProfissionalSaude profissional = profissionalSaudeRepository.findByUser_Id(dto.getProfissionalUserId())
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado com User ID: " + dto.getProfissionalUserId()));
+                .orElseThrow(() -> new RuntimeException("Profissional não encontrado..."));
         Crianca crianca = criancaRepository.findById(dto.getCriancaId())
-                .orElseThrow(() -> new RuntimeException("Criança não encontrada com ID: " + dto.getCriancaId()));
+                .orElseThrow(() -> new RuntimeException("Criança não encontrada..."));
+
+        // 3. Busca o item do calendário que foi selecionado
+        CalendarioVacina itemCalendario = calendarioVacinaRepository.findById(dto.getCalendarioVacinaId())
+                .orElseThrow(() -> new RuntimeException("Item do calendário não encontrado com ID: " + dto.getCalendarioVacinaId()));
 
         RegistroVacina novoRegistro = new RegistroVacina();
-        // ... (lógica para preencher o novoRegistro) ...
         novoRegistro.setCrianca(crianca);
         novoRegistro.setProfissional(profissional);
-        novoRegistro.setNomeVacina(dto.getNomeVacina());
-        novoRegistro.setDose(dto.getDose());
+        novoRegistro.setCalendarioVacina(itemCalendario); // 4. Associa o item
         novoRegistro.setDataAplicacao(dto.getDataAplicacao());
         novoRegistro.setLocalAplicacao(dto.getLocalAplicacao());
         novoRegistro.setLoteVacina(dto.getLoteVacina());
 
-        RegistroVacina registroSalvo = registroVacinaRepository.save(novoRegistro); // 2. Salva a entidade
-
-        return toDTO(registroSalvo); // 3. Retorna o DTO
+        RegistroVacina registroSalvo = registroVacinaRepository.save(novoRegistro);
+        return toDTO(registroSalvo);
     }
 
     // --- MÉTODO DE LISTAGEM ATUALIZADO ---
@@ -66,32 +71,34 @@ public class RegistroVacinaService {
     private RegistroVacinaResponseDTO toDTO(RegistroVacina registro) {
         RegistroVacinaResponseDTO dto = new RegistroVacinaResponseDTO();
         dto.setId(registro.getId());
-        dto.setNomeVacina(registro.getNomeVacina());
-        dto.setDose(registro.getDose());
         dto.setDataAplicacao(registro.getDataAplicacao());
         dto.setLocalAplicacao(registro.getLocalAplicacao());
         dto.setLoteVacina(registro.getLoteVacina());
+
+        // 5. Pega os dados da entidade associada
+        if (registro.getCalendarioVacina() != null) {
+            dto.setNomeVacina(registro.getCalendarioVacina().getNomeVacina());
+            dto.setDose(registro.getCalendarioVacina().getDose());
+        }
         return dto;
     }
 
     @Transactional
     public RegistroVacinaResponseDTO editarRegistro(UUID registroId, RegistroVacinaRequestDTO dto) {
-        // 1. Encontra o registro de vacina existente
         RegistroVacina registro = registroVacinaRepository.findById(registroId)
-                .orElseThrow(() -> new RuntimeException("Registro de vacina não encontrado com ID: " + registroId));
-
-        // 2. Encontra o profissional que está editando
+                .orElseThrow(() -> new RuntimeException("Registro de vacina não encontrado..."));
         ProfissionalSaude profissional = profissionalSaudeRepository.findByUser_Id(dto.getProfissionalUserId())
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado com User ID: " + dto.getProfissionalUserId()));
+                .orElseThrow(() -> new RuntimeException("Profissional não encontrado..."));
 
-        // 3. Atualiza os campos (Vamos assumir que quem edita se torna o profissional do registro)
+        // 3. Busca o NOVO item do calendário
+        CalendarioVacina itemCalendario = calendarioVacinaRepository.findById(dto.getCalendarioVacinaId())
+                .orElseThrow(() -> new RuntimeException("Item do calendário não encontrado com ID: " + dto.getCalendarioVacinaId()));
+
         registro.setProfissional(profissional);
-        registro.setNomeVacina(dto.getNomeVacina());
-        registro.setDose(dto.getDose());
+        registro.setCalendarioVacina(itemCalendario); // 4. Associa o novo item
         registro.setDataAplicacao(dto.getDataAplicacao());
         registro.setLocalAplicacao(dto.getLocalAplicacao());
         registro.setLoteVacina(dto.getLoteVacina());
-        // Não alteramos a criança (criancaId)
 
         RegistroVacina registroSalvo = registroVacinaRepository.save(registro);
         return toDTO(registroSalvo);
